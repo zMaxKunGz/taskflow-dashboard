@@ -2,6 +2,13 @@ export type TaskStatus = 'todo' | 'in-progress' | 'completed';
 
 export type TaskPriority = 'low' | 'medium' | 'high';
 
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+  assigneeId?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -12,7 +19,7 @@ export interface Task {
   startDate: Date;
   endDate: Date;
   tags: string[];
-  subtasks?: { id: string; title: string; completed: boolean }[];
+  subtasks?: Subtask[];
 }
 
 export interface TeamMember {
@@ -21,4 +28,12 @@ export interface TeamMember {
   role: string;
   avatar: string;
   email: string;
+}
+
+export interface TaskSuggestion {
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  tags: string[];
+  estimatedDays: number;
 }
