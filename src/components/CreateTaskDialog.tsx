@@ -322,7 +322,7 @@ export function CreateTaskDialog({
                       onValueChange={(v) => handleSubtaskAssigneeChange(subtask.id, v)}
                     >
                       <SelectTrigger className="w-[160px] h-8 text-xs">
-                        <SelectValue placeholder="Assign to..." />
+                        <SelectValue placeholder="Assign to...">{subtask.assigneeId ? teamMembers.find(m => m.id === subtask.assigneeId)?.name : 'Unassigned'}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">Unassigned</SelectItem>
