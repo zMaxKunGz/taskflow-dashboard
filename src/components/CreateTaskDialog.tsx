@@ -122,7 +122,7 @@ export function CreateTaskDialog({
   const handleSubtaskAssigneeChange = (subtaskId: string, newAssigneeId: string) => {
     setSubtasks(
       subtasks.map(s =>
-        s.id === subtaskId ? { ...s, assigneeId: newAssigneeId || undefined } : s
+        s.id === subtaskId ? { ...s, assigneeId: newAssigneeId === 'unassigned' ? undefined : newAssigneeId } : s
       )
     );
   };
@@ -322,10 +322,10 @@ export function CreateTaskDialog({
                       onValueChange={(v) => handleSubtaskAssigneeChange(subtask.id, v)}
                     >
                       <SelectTrigger className="w-[160px] h-8 text-xs">
-                        <SelectValue placeholder="Assign to..." />
+                        <SelectValue placeholder="Assign to...">{subtask.assigneeId ? teamMembers.find(m => m.id === subtask.assigneeId)?.name : 'Unassigned'}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
                         {teamMembers.map((member) => (
                           <SelectItem key={member.id} value={member.id}>
                             <div className="flex items-center gap-2">
