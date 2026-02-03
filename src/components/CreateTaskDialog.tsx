@@ -122,7 +122,7 @@ export function CreateTaskDialog({
   const handleSubtaskAssigneeChange = (subtaskId: string, newAssigneeId: string) => {
     setSubtasks(
       subtasks.map(s =>
-        s.id === subtaskId ? { ...s, assigneeId: newAssigneeId || undefined } : s
+        s.id === subtaskId ? { ...s, assigneeId: newAssigneeId === 'unassigned' ? undefined : newAssigneeId } : s
       )
     );
   };
