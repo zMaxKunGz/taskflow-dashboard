@@ -325,7 +325,7 @@ export function CreateTaskDialog({
                         <SelectValue placeholder="Assign to...">{subtask.assigneeId ? teamMembers.find(m => m.id === subtask.assigneeId)?.name : 'Unassigned'}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
                         {teamMembers.map((member) => (
                           <SelectItem key={member.id} value={member.id}>
                             <div className="flex items-center gap-2">
