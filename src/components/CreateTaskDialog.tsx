@@ -491,8 +491,7 @@ function SubtaskForm({ subtask, index, teamMembers, onChange, onRemove }: Subtas
 
   return (
     <div className="border border-border rounded-lg p-3 space-y-3 bg-muted/20 relative group">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">Subtask {index + 1}</span>
+      <div className="flex items-center justify-end">
         <Button
           type="button"
           variant="ghost"
