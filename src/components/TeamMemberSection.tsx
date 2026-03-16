@@ -12,7 +12,7 @@ interface TeamMemberSectionProps {
 export function TeamMemberSection({ member, tasks, onTaskClick }: TeamMemberSectionProps) {
   const completedCount = tasks.filter(t => t.status === 'completed').length;
   const inProgressCount = tasks.filter(t => t.status === 'in-progress').length;
-  const todoCount = tasks.filter(t => t.status === 'todo').length;
+  const waitingCount = tasks.filter(t => t.status === 'waiting').length;
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden animate-slide-up">
@@ -28,9 +28,9 @@ export function TeamMemberSection({ member, tasks, onTaskClick }: TeamMemberSect
             <p className="text-sm text-muted-foreground truncate">{member.role}</p>
           </div>
           <div className="flex items-center gap-2">
-            {todoCount > 0 && (
+            {waitingCount > 0 && (
               <Badge variant="secondary" className="bg-muted text-muted-foreground">
-                {todoCount} todo
+                {waitingCount} waiting
               </Badge>
             )}
             {inProgressCount > 0 && (

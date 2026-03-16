@@ -9,7 +9,7 @@ interface TaskTimelineProps {
 }
 
 const statusColors = {
-  'todo': 'bg-muted',
+  'waiting': 'bg-muted',
   'in-progress': 'bg-primary',
   'completed': 'bg-success',
 };
@@ -48,7 +48,6 @@ export function TaskTimeline({ tasks, teamMembers, onTaskClick }: TaskTimelinePr
 
       <div className="overflow-x-auto">
         <div className="min-w-[800px]">
-          {/* Header with dates */}
           <div className="flex border-b border-border">
             <div className="w-48 shrink-0 p-3 bg-muted/30 border-r border-border">
               <span className="text-sm font-medium text-muted-foreground">Team Member</span>
@@ -74,7 +73,6 @@ export function TaskTimeline({ tasks, teamMembers, onTaskClick }: TaskTimelinePr
             </div>
           </div>
 
-          {/* Team member rows */}
           {teamMembers.map((member) => {
             const memberTasks = getMemberTasks(member.id);
             
@@ -94,7 +92,6 @@ export function TaskTimeline({ tasks, teamMembers, onTaskClick }: TaskTimelinePr
                   </div>
                 </div>
                 <div className="flex-1 relative h-20">
-                  {/* Grid lines */}
                   <div className="absolute inset-0 flex">
                     {days.map((day, i) => (
                       <div
@@ -107,13 +104,11 @@ export function TaskTimeline({ tasks, teamMembers, onTaskClick }: TaskTimelinePr
                     ))}
                   </div>
                   
-                  {/* Today line */}
                   <div
                     className="absolute top-0 bottom-0 w-0.5 bg-destructive z-10"
                     style={{ left: `${(differenceInDays(today, startDate) / totalDays) * 100}%` }}
                   />
 
-                  {/* Task bars */}
                   <div className="absolute inset-0 p-2 flex flex-col gap-1">
                     {memberTasks.map((task, idx) => {
                       const position = getTaskPosition(task);

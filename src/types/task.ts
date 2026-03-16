@@ -1,12 +1,14 @@
-export type TaskStatus = 'todo' | 'in-progress' | 'completed';
+export type TaskStatus = 'waiting' | 'in-progress' | 'completed';
 
 export type TaskPriority = 'low' | 'medium' | 'high';
 
 export interface Subtask {
   id: string;
   title: string;
-  completed: boolean;
+  detail: string;
   assigneeId?: string;
+  endDate?: Date;
+  completed: boolean;
 }
 
 export interface Task {
@@ -19,7 +21,15 @@ export interface Task {
   startDate: Date;
   endDate: Date;
   tags: string[];
+  files?: TaskFile[];
   subtasks?: Subtask[];
+}
+
+export interface TaskFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
 }
 
 export interface TeamMember {

@@ -20,13 +20,13 @@ interface TaskDetailDialogProps {
 }
 
 const statusStyles = {
-  'todo': 'bg-muted text-muted-foreground',
+  'waiting': 'bg-muted text-muted-foreground',
   'in-progress': 'bg-primary/10 text-primary',
   'completed': 'bg-success/10 text-success',
 };
 
 const statusLabels = {
-  'todo': 'To Do',
+  'waiting': 'Waiting',
   'in-progress': 'In Progress',
   'completed': 'Completed',
 };
@@ -66,14 +66,12 @@ export function TaskDetailDialog({ task, assignee, open, onOpenChange }: TaskDet
         </DialogHeader>
 
         <div className="space-y-5 mt-4">
-          {/* Description */}
           <div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {task.description}
             </p>
           </div>
 
-          {/* Details Grid */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
               <User className="w-4 h-4 text-muted-foreground" />
@@ -101,22 +99,22 @@ export function TaskDetailDialog({ task, assignee, open, onOpenChange }: TaskDet
             </div>
           </div>
 
-          {/* Tags */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Tag className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-card-foreground">Tags</span>
+          {task.tags.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Tag className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-card-foreground">Tags</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {task.tags.map((tag) => (
+                  <Badge key={tag} variant="outline" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {task.tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
+          )}
 
-          {/* Subtasks */}
           {task.subtasks && task.subtasks.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
