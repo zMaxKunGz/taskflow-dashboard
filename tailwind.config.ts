@@ -69,7 +69,7 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         status: {
-          todo: "hsl(var(--status-todo))",
+          waiting: "hsl(var(--status-waiting))",
           "in-progress": "hsl(var(--status-in-progress))",
           completed: "hsl(var(--status-completed))",
         },
