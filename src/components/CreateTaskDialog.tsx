@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Task, TaskStatus, TaskPriority, Subtask, TeamMember, TaskSuggestion } from '@/types/task';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Task, TaskStatus, TaskPriority, Subtask, TeamMember, TaskSuggestion, TaskFile } from '@/types/task';
 import {
   Dialog,
   DialogContent,
@@ -20,8 +20,23 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, X, Sparkles } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Plus, X, Sparkles, CalendarIcon, Upload, FileIcon, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 
 interface CreateTaskDialogProps {
   open: boolean;
@@ -47,24 +62,23 @@ export function CreateTaskDialog({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
-  const [status, setStatus] = useState<TaskStatus>('todo');
+  const [assigneeSearchOpen, setAssigneeSearchOpen] = useState(false);
+  const [status, setStatus] = useState<TaskStatus>('waiting');
   const [priority, setPriority] = useState<TaskPriority>('medium');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(addDays(new Date(), 7).toISOString().split('T')[0]);
-  const [tagsInput, setTagsInput] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 7));
+  const [files, setFiles] = useState<TaskFile[]>([]);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [isPrefilled, setIsPrefilled] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
-  // Handle prefill data
   useEffect(() => {
     if (prefillData && open) {
       setTitle(prefillData.title);
       setDescription(prefillData.description);
       setPriority(prefillData.priority);
-      setTags(prefillData.tags);
-      setEndDate(addDays(new Date(), prefillData.estimatedDays).toISOString().split('T')[0]);
+      setEndDate(addDays(new Date(), prefillData.estimatedDays));
       setIsPrefilled(true);
     }
   }, [prefillData, open]);
@@ -73,14 +87,12 @@ export function CreateTaskDialog({
     setTitle('');
     setDescription('');
     setAssigneeId('');
-    setStatus('todo');
+    setStatus('waiting');
     setPriority('medium');
-    setStartDate(new Date().toISOString().split('T')[0]);
-    setEndDate(addDays(new Date(), 7).toISOString().split('T')[0]);
-    setTags([]);
-    setTagsInput('');
+    setStartDate(new Date());
+    setEndDate(addDays(new Date(), 7));
+    setFiles([]);
     setSubtasks([]);
-    setNewSubtaskTitle('');
     setIsPrefilled(false);
   };
 
@@ -89,46 +101,72 @@ export function CreateTaskDialog({
     onOpenChange(false);
   };
 
-  const handleAddTag = () => {
-    if (tagsInput.trim() && !tags.includes(tagsInput.trim())) {
-      setTags([...tags, tagsInput.trim()]);
-      setTagsInput('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
-
   const handleAddSubtask = () => {
-    if (newSubtaskTitle.trim()) {
-      setSubtasks([
-        ...subtasks,
-        {
-          id: `new-${Date.now()}`,
-          title: newSubtaskTitle.trim(),
-          completed: false,
-          assigneeId: undefined,
-        },
-      ]);
-      setNewSubtaskTitle('');
-    }
+    setSubtasks([
+      ...subtasks,
+      {
+        id: `new-${Date.now()}`,
+        title: '',
+        detail: '',
+        assigneeId: undefined,
+        endDate: undefined,
+        completed: false,
+      },
+    ]);
   };
 
   const handleRemoveSubtask = (subtaskId: string) => {
     setSubtasks(subtasks.filter(s => s.id !== subtaskId));
   };
 
-  const handleSubtaskAssigneeChange = (subtaskId: string, newAssigneeId: string) => {
+  const handleSubtaskChange = (subtaskId: string, field: keyof Subtask, value: any) => {
     setSubtasks(
       subtasks.map(s =>
-        s.id === subtaskId ? { ...s, assigneeId: newAssigneeId === 'unassigned' ? undefined : newAssigneeId } : s
+        s.id === subtaskId ? { ...s, [field]: field === 'assigneeId' && value === 'unassigned' ? undefined : value } : s
       )
     );
   };
 
+  const handleFileDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    const newFiles: TaskFile[] = droppedFiles.map(f => ({
+      id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: f.name,
+      size: f.size,
+      type: f.type,
+    }));
+    setFiles(prev => [...prev, ...newFiles]);
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const selectedFiles = Array.from(e.target.files);
+    const newFiles: TaskFile[] = selectedFiles.map(f => ({
+      id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: f.name,
+      size: f.size,
+      type: f.type,
+    }));
+    setFiles(prev => [...prev, ...newFiles]);
+    e.target.value = '';
+  };
+
+  const handleRemoveFile = (fileId: string) => {
+    setFiles(files.filter(f => f.id !== fileId));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   const handleSubmit = () => {
     if (!title.trim() || !assigneeId) return;
+
+    const validSubtasks = subtasks.filter(s => s.title.trim());
 
     const newTask: Omit<Task, 'id'> = {
       title: title.trim(),
@@ -136,19 +174,18 @@ export function CreateTaskDialog({
       assigneeId,
       status,
       priority,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      tags,
-      subtasks: subtasks.length > 0 ? subtasks : undefined,
+      startDate,
+      endDate,
+      tags: [],
+      files: files.length > 0 ? files : undefined,
+      subtasks: validSubtasks.length > 0 ? validSubtasks : undefined,
     };
 
     onCreateTask(newTask);
     handleClose();
   };
 
-  const getAssigneeName = (id: string) => {
-    return teamMembers.find(m => m.id === id)?.name || 'Unassigned';
-  };
+  const selectedAssignee = teamMembers.find(m => m.id === assigneeId);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -166,9 +203,9 @@ export function CreateTaskDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Title */}
+          {/* Task Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title">Task Title *</Label>
             <Input
               id="title"
               value={title}
@@ -177,42 +214,69 @@ export function CreateTaskDialog({
             />
           </div>
 
-          {/* Description */}
+          {/* Assignee - Search & Click */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter task description..."
-              rows={3}
-            />
+            <Label>Assignee *</Label>
+            <Popover open={assigneeSearchOpen} onOpenChange={setAssigneeSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !assigneeId && "text-muted-foreground"
+                  )}
+                >
+                  {selectedAssignee ? (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="w-5 h-5">
+                        <AvatarImage src={selectedAssignee.avatar} alt={selectedAssignee.name} />
+                        <AvatarFallback>{selectedAssignee.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <span>{selectedAssignee.name}</span>
+                      <span className="text-muted-foreground text-xs">— {selectedAssignee.role}</span>
+                    </div>
+                  ) : (
+                    "Search and select assignee..."
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search team members..." />
+                  <CommandList>
+                    <CommandEmpty>No member found.</CommandEmpty>
+                    <CommandGroup>
+                      {teamMembers.map((member) => (
+                        <CommandItem
+                          key={member.id}
+                          value={member.name}
+                          onSelect={() => {
+                            setAssigneeId(member.id);
+                            setAssigneeSearchOpen(false);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Avatar className="w-6 h-6">
+                              <AvatarImage src={member.avatar} alt={member.name} />
+                              <AvatarFallback>{member.name[0]}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">{member.name}</p>
+                              <p className="text-xs text-muted-foreground">{member.role}</p>
+                            </div>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
-          {/* Assignee & Status */}
+          {/* Status & Priority */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Assignee *</Label>
-              <Select value={assigneeId} onValueChange={setAssigneeId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select assignee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="w-5 h-5">
-                          <AvatarImage src={member.avatar} alt={member.name} />
-                          <AvatarFallback>{member.name[0]}</AvatarFallback>
-                        </Avatar>
-                        {member.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
@@ -220,16 +284,13 @@ export function CreateTaskDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todo">To Do</SelectItem>
+                  <SelectItem value="waiting">Waiting</SelectItem>
                   <SelectItem value="in-progress">In Progress</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          {/* Priority & Dates */}
-          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Priority</Label>
               <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
@@ -243,114 +304,159 @@ export function CreateTaskDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
+          {/* Start Date & End Date */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
+              <Label>Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(startDate, 'PPP')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(d) => d && setStartDate(d)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
+              <Label>End Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(endDate, 'PPP')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(d) => d && setEndDate(d)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
-          {/* Tags */}
+          {/* Description with file drop zone */}
           <div className="space-y-2">
-            <Label>Tags</Label>
-            <div className="flex gap-2">
-              <Input
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="Add a tag..."
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+            <Label htmlFor="description">Description</Label>
+            <div
+              className={cn(
+                "relative rounded-md border transition-colors",
+                isDragging ? "border-primary border-dashed bg-primary/5" : "border-input"
+              )}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleFileDrop}
+            >
+              <Textarea
+                ref={descriptionRef}
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter task description... (drag files here to attach)"
+                rows={4}
+                className="border-0 focus-visible:ring-0 resize-none"
               />
-              <Button type="button" variant="outline" onClick={handleAddTag}>
-                <Plus className="w-4 h-4" />
-              </Button>
+              {isDragging && (
+                <div className="absolute inset-0 flex items-center justify-center bg-primary/5 rounded-md pointer-events-none">
+                  <div className="flex flex-col items-center gap-1 text-primary">
+                    <Upload className="w-6 h-6" />
+                    <span className="text-sm font-medium">Drop files here</span>
+                  </div>
+                </div>
+              )}
             </div>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="gap-1">
-                    {tag}
-                    <X
-                      className="w-3 h-3 cursor-pointer hover:text-destructive"
-                      onClick={() => handleRemoveTag(tag)}
-                    />
-                  </Badge>
+
+            {/* File upload button */}
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted">
+                  <Upload className="w-3.5 h-3.5" />
+                  Attach files
+                </div>
+              </label>
+            </div>
+
+            {/* Uploaded files */}
+            {files.length > 0 && (
+              <div className="space-y-1.5 mt-2">
+                {files.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center gap-2 p-2 bg-muted/50 rounded-md group"
+                  >
+                    <FileIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm flex-1 truncate">{file.name}</span>
+                    <span className="text-xs text-muted-foreground">{formatFileSize(file.size)}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRemoveFile(file.id)}
+                    >
+                      <X className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             )}
           </div>
 
           {/* Subtasks */}
-          <div className="space-y-2">
-            <Label>Subtasks</Label>
-            <div className="flex gap-2">
-              <Input
-                value={newSubtaskTitle}
-                onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                placeholder="Add a subtask..."
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSubtask())}
-              />
-              <Button type="button" variant="outline" onClick={handleAddSubtask}>
-                <Plus className="w-4 h-4" />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Subtasks</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddSubtask}
+                className="h-7 gap-1 text-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Subtask
               </Button>
             </div>
 
             {subtasks.length > 0 && (
-              <div className="space-y-2 mt-3">
-                {subtasks.map((subtask) => (
-                  <div
+              <div className="space-y-3">
+                {subtasks.map((subtask, index) => (
+                  <SubtaskForm
                     key={subtask.id}
-                    className="flex items-center gap-2 p-2 bg-muted/50 rounded-md"
-                  >
-                    <span className="flex-1 text-sm">{subtask.title}</span>
-                    <Select
-                      value={subtask.assigneeId || ''}
-                      onValueChange={(v) => handleSubtaskAssigneeChange(subtask.id, v)}
-                    >
-                      <SelectTrigger className="w-[160px] h-8 text-xs">
-                        <SelectValue placeholder="Assign to...">{subtask.assigneeId ? teamMembers.find(m => m.id === subtask.assigneeId)?.name : 'Unassigned'}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {teamMembers.map((member) => (
-                          <SelectItem key={member.id} value={member.id}>
-                            <div className="flex items-center gap-2">
-                              <Avatar className="w-4 h-4">
-                                <AvatarImage src={member.avatar} alt={member.name} />
-                                <AvatarFallback className="text-[10px]">
-                                  {member.name[0]}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-xs">{member.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => handleRemoveSubtask(subtask.id)}
-                    >
-                      <X className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                    </Button>
-                  </div>
+                    subtask={subtask}
+                    index={index}
+                    teamMembers={teamMembers}
+                    onChange={(field, value) => handleSubtaskChange(subtask.id, field, value)}
+                    onRemove={() => handleRemoveSubtask(subtask.id)}
+                  />
                 ))}
               </div>
             )}
@@ -367,5 +473,144 @@ export function CreateTaskDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Subtask form component
+interface SubtaskFormProps {
+  subtask: Subtask;
+  index: number;
+  teamMembers: TeamMember[];
+  onChange: (field: keyof Subtask, value: any) => void;
+  onRemove: () => void;
+}
+
+function SubtaskForm({ subtask, index, teamMembers, onChange, onRemove }: SubtaskFormProps) {
+  const [assigneeOpen, setAssigneeOpen] = useState(false);
+  const selectedAssignee = teamMembers.find(m => m.id === subtask.assigneeId);
+
+  return (
+    <div className="border border-border rounded-lg p-3 space-y-3 bg-muted/20 relative group">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground">Subtask {index + 1}</span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={onRemove}
+        >
+          <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+        </Button>
+      </div>
+
+      {/* Title */}
+      <Input
+        value={subtask.title}
+        onChange={(e) => onChange('title', e.target.value)}
+        placeholder="Subtask title..."
+        className="h-8 text-sm"
+      />
+
+      {/* Detail */}
+      <Textarea
+        value={subtask.detail}
+        onChange={(e) => onChange('detail', e.target.value)}
+        placeholder="Detail..."
+        rows={2}
+        className="text-sm resize-none"
+      />
+
+      <div className="grid grid-cols-2 gap-3">
+        {/* Assignee */}
+        <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                "w-full justify-start text-left font-normal h-8 text-xs",
+                !subtask.assigneeId && "text-muted-foreground"
+              )}
+            >
+              {selectedAssignee ? (
+                <div className="flex items-center gap-1.5 truncate">
+                  <Avatar className="w-4 h-4">
+                    <AvatarImage src={selectedAssignee.avatar} alt={selectedAssignee.name} />
+                    <AvatarFallback className="text-[8px]">{selectedAssignee.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{selectedAssignee.name}</span>
+                </div>
+              ) : (
+                "Assign to..."
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Search..." className="h-8" />
+              <CommandList>
+                <CommandEmpty>No member found.</CommandEmpty>
+                <CommandGroup>
+                  <CommandItem
+                    value="unassigned"
+                    onSelect={() => {
+                      onChange('assigneeId', 'unassigned');
+                      setAssigneeOpen(false);
+                    }}
+                  >
+                    <span className="text-xs text-muted-foreground">Unassigned</span>
+                  </CommandItem>
+                  {teamMembers.map((member) => (
+                    <CommandItem
+                      key={member.id}
+                      value={member.name}
+                      onSelect={() => {
+                        onChange('assigneeId', member.id);
+                        setAssigneeOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Avatar className="w-4 h-4">
+                          <AvatarImage src={member.avatar} alt={member.name} />
+                          <AvatarFallback className="text-[8px]">{member.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs">{member.name}</span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+
+        {/* End Date */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                "w-full justify-start text-left font-normal h-8 text-xs",
+                !subtask.endDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-1.5 h-3 w-3" />
+              {subtask.endDate ? format(subtask.endDate, 'MMM d, yyyy') : 'End date'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={subtask.endDate}
+              onSelect={(d) => onChange('endDate', d)}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
   );
 }

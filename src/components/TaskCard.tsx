@@ -11,13 +11,13 @@ interface TaskCardProps {
 }
 
 const statusStyles = {
-  'todo': 'bg-muted text-muted-foreground',
+  'waiting': 'bg-muted text-muted-foreground',
   'in-progress': 'bg-primary/10 text-primary',
   'completed': 'bg-success/10 text-success',
 };
 
 const statusLabels = {
-  'todo': 'To Do',
+  'waiting': 'Waiting',
   'in-progress': 'In Progress',
   'completed': 'Completed',
 };
