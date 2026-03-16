@@ -52,7 +52,7 @@
     --sidebar-ring: 221 83% 53%;
 
     /* Task status colors */
-    --status-todo: 220 14% 70%;
+    --status-waiting: 220 14% 70%;
     --status-in-progress: 221 83% 53%;
     --status-completed: 142 76% 36%;
 
