@@ -223,8 +223,8 @@ export function CreateTaskDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Create New Task
-            {isPrefilled && (
+            {isEditMode ? 'Edit Task' : 'Create New Task'}
+            {isPrefilled && !isEditMode && (
               <Badge variant="secondary" className="bg-primary/10 text-primary">
                 <Sparkles className="w-3 h-3 mr-1" />
                 AI Suggested
