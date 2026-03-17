@@ -43,6 +43,8 @@ interface CreateTaskDialogProps {
   onOpenChange: (open: boolean) => void;
   teamMembers: TeamMember[];
   onCreateTask: (task: Omit<Task, 'id'>) => void;
+  onUpdateTask?: (task: Task) => void;
+  editTask?: Task | null;
   prefillData?: TaskSuggestion | null;
 }
 
