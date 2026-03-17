@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Plus, X, Sparkles, CalendarIcon, Upload, FileIcon, Trash2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
