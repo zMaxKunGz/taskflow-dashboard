@@ -521,8 +521,23 @@ function SubtaskForm({ subtask, index, teamMembers, onChange, onRemove }: Subtas
   const selectedAssignee = teamMembers.find(m => m.id === subtask.assigneeId);
 
   return (
-    <div className="border border-border rounded-lg p-3 space-y-3 bg-muted/20 relative group">
-      <div className="flex items-center justify-end">
+    <div className={cn(
+      "border border-border rounded-lg p-3 space-y-3 relative group",
+      subtask.completed ? "bg-success/5" : "bg-muted/20"
+    )}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={subtask.completed}
+            onCheckedChange={(checked) => onChange('completed', !!checked)}
+          />
+          <span className={cn(
+            "text-xs font-medium",
+            subtask.completed ? "text-muted-foreground line-through" : "text-card-foreground"
+          )}>
+            {subtask.title || 'Untitled subtask'}
+          </span>
+        </div>
         <Button
           type="button"
           variant="ghost"
