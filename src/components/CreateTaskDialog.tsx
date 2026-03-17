@@ -79,14 +79,24 @@ export function CreateTaskDialog({
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (prefillData && open) {
+    if (editTask && open) {
+      setTitle(editTask.title);
+      setDescription(editTask.description);
+      setAssigneeId(editTask.assigneeId);
+      setStatus(editTask.status);
+      setPriority(editTask.priority);
+      setStartDate(editTask.startDate);
+      setEndDate(editTask.endDate);
+      setFiles(editTask.files || []);
+      setSubtasks(editTask.subtasks || []);
+    } else if (prefillData && open) {
       setTitle(prefillData.title);
       setDescription(prefillData.description);
       setPriority(prefillData.priority);
       setEndDate(addDays(new Date(), prefillData.estimatedDays));
       setIsPrefilled(true);
     }
-  }, [prefillData, open]);
+  }, [prefillData, editTask, open]);
 
   const resetForm = () => {
     setTitle('');
