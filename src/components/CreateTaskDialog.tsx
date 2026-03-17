@@ -499,7 +499,7 @@ export function CreateTaskDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!title.trim() || !assigneeId}>
-            Create Task
+            {isEditMode ? 'Save Changes' : 'Create Task'}
           </Button>
         </DialogFooter>
       </DialogContent>

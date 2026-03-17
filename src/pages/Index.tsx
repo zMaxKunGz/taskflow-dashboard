@@ -4,31 +4,32 @@ import { tasks as initialTasks, teamMembers } from '@/data/sampleData';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { TeamMemberSection } from '@/components/TeamMemberSection';
 import { TaskTimeline } from '@/components/TaskTimeline';
-import { TaskDetailDialog } from '@/components/TaskDetailDialog';
 import { CreateTaskDialog } from '@/components/CreateTaskDialog';
 import { AISuggestionBox } from '@/components/AISuggestionBox';
 
 const Index = () => {
   const [view, setView] = useState<'team' | 'timeline'>('team');
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
   const [prefillData, setPrefillData] = useState<TaskSuggestion | null>(null);
 
   const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
+    setEditTask(task);
+    setPrefillData(null);
     setDialogOpen(true);
   };
 
   const handleCreateTask = () => {
+    setEditTask(null);
     setPrefillData(null);
-    setCreateDialogOpen(true);
+    setDialogOpen(true);
   };
 
   const handleCreateFromSuggestion = (suggestion: TaskSuggestion) => {
+    setEditTask(null);
     setPrefillData(suggestion);
-    setCreateDialogOpen(true);
+    setDialogOpen(true);
   };
 
   const handleTaskCreated = (newTask: Omit<Task, 'id'>) => {
@@ -39,13 +40,13 @@ const Index = () => {
     setTasks([...tasks, task]);
   };
 
+  const handleTaskUpdated = (updatedTask: Task) => {
+    setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+  };
+
   const getTasksForMember = (memberId: string) => {
     return tasks.filter(task => task.assigneeId === memberId);
   };
-
-  const selectedAssignee = selectedTask
-    ? teamMembers.find(m => m.id === selectedTask.assigneeId) || null
-    : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -58,7 +59,6 @@ const Index = () => {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Main Content */}
           <div className="lg:col-span-3">
             {view === 'team' ? (
               <div className="space-y-6">
@@ -80,7 +80,6 @@ const Index = () => {
             )}
           </div>
 
-          {/* AI Suggestions Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
               <AISuggestionBox onCreateFromSuggestion={handleCreateFromSuggestion} />
@@ -88,18 +87,13 @@ const Index = () => {
           </div>
         </div>
 
-        <TaskDetailDialog
-          task={selectedTask}
-          assignee={selectedAssignee}
+        <CreateTaskDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-        />
-
-        <CreateTaskDialog
-          open={createDialogOpen}
-          onOpenChange={setCreateDialogOpen}
           teamMembers={teamMembers}
           onCreateTask={handleTaskCreated}
+          onUpdateTask={handleTaskUpdated}
+          editTask={editTask}
           prefillData={prefillData}
         />
       </div>
