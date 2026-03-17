@@ -59,8 +59,11 @@ export function CreateTaskDialog({
   onOpenChange,
   teamMembers,
   onCreateTask,
+  onUpdateTask,
+  editTask,
   prefillData,
 }: CreateTaskDialogProps) {
+  const isEditMode = !!editTask;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
