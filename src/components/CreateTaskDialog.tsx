@@ -43,6 +43,8 @@ interface CreateTaskDialogProps {
   onOpenChange: (open: boolean) => void;
   teamMembers: TeamMember[];
   onCreateTask: (task: Omit<Task, 'id'>) => void;
+  onUpdateTask?: (task: Task) => void;
+  editTask?: Task | null;
   prefillData?: TaskSuggestion | null;
 }
 
@@ -57,8 +59,11 @@ export function CreateTaskDialog({
   onOpenChange,
   teamMembers,
   onCreateTask,
+  onUpdateTask,
+  editTask,
   prefillData,
 }: CreateTaskDialogProps) {
+  const isEditMode = !!editTask;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
@@ -74,14 +79,24 @@ export function CreateTaskDialog({
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (prefillData && open) {
+    if (editTask && open) {
+      setTitle(editTask.title);
+      setDescription(editTask.description);
+      setAssigneeId(editTask.assigneeId);
+      setStatus(editTask.status);
+      setPriority(editTask.priority);
+      setStartDate(editTask.startDate);
+      setEndDate(editTask.endDate);
+      setFiles(editTask.files || []);
+      setSubtasks(editTask.subtasks || []);
+    } else if (prefillData && open) {
       setTitle(prefillData.title);
       setDescription(prefillData.description);
       setPriority(prefillData.priority);
       setEndDate(addDays(new Date(), prefillData.estimatedDays));
       setIsPrefilled(true);
     }
-  }, [prefillData, open]);
+  }, [prefillData, editTask, open]);
 
   const resetForm = () => {
     setTitle('');
@@ -168,20 +183,36 @@ export function CreateTaskDialog({
 
     const validSubtasks = subtasks.filter(s => s.title.trim());
 
-    const newTask: Omit<Task, 'id'> = {
-      title: title.trim(),
-      description: description.trim(),
-      assigneeId,
-      status,
-      priority,
-      startDate,
-      endDate,
-      tags: [],
-      files: files.length > 0 ? files : undefined,
-      subtasks: validSubtasks.length > 0 ? validSubtasks : undefined,
-    };
-
-    onCreateTask(newTask);
+    if (isEditMode && editTask && onUpdateTask) {
+      const updatedTask: Task = {
+        ...editTask,
+        title: title.trim(),
+        description: description.trim(),
+        assigneeId,
+        status,
+        priority,
+        startDate,
+        endDate,
+        tags: editTask.tags,
+        files: files.length > 0 ? files : undefined,
+        subtasks: validSubtasks.length > 0 ? validSubtasks : undefined,
+      };
+      onUpdateTask(updatedTask);
+    } else {
+      const newTask: Omit<Task, 'id'> = {
+        title: title.trim(),
+        description: description.trim(),
+        assigneeId,
+        status,
+        priority,
+        startDate,
+        endDate,
+        tags: [],
+        files: files.length > 0 ? files : undefined,
+        subtasks: validSubtasks.length > 0 ? validSubtasks : undefined,
+      };
+      onCreateTask(newTask);
+    }
     handleClose();
   };
 
@@ -192,8 +223,8 @@ export function CreateTaskDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Create New Task
-            {isPrefilled && (
+            {isEditMode ? 'Edit Task' : 'Create New Task'}
+            {isPrefilled && !isEditMode && (
               <Badge variant="secondary" className="bg-primary/10 text-primary">
                 <Sparkles className="w-3 h-3 mr-1" />
                 AI Suggested
@@ -468,7 +499,7 @@ export function CreateTaskDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!title.trim() || !assigneeId}>
-            Create Task
+            {isEditMode ? 'Save Changes' : 'Create Task'}
           </Button>
         </DialogFooter>
       </DialogContent>
