@@ -183,20 +183,36 @@ export function CreateTaskDialog({
 
     const validSubtasks = subtasks.filter(s => s.title.trim());
 
-    const newTask: Omit<Task, 'id'> = {
-      title: title.trim(),
-      description: description.trim(),
-      assigneeId,
-      status,
-      priority,
-      startDate,
-      endDate,
-      tags: [],
-      files: files.length > 0 ? files : undefined,
-      subtasks: validSubtasks.length > 0 ? validSubtasks : undefined,
-    };
-
-    onCreateTask(newTask);
+    if (isEditMode && editTask && onUpdateTask) {
+      const updatedTask: Task = {
+        ...editTask,
+        title: title.trim(),
+        description: description.trim(),
+        assigneeId,
+        status,
+        priority,
+        startDate,
+        endDate,
+        tags: editTask.tags,
+        files: files.length > 0 ? files : undefined,
+        subtasks: validSubtasks.length > 0 ? validSubtasks : undefined,
+      };
+      onUpdateTask(updatedTask);
+    } else {
+      const newTask: Omit<Task, 'id'> = {
+        title: title.trim(),
+        description: description.trim(),
+        assigneeId,
+        status,
+        priority,
+        startDate,
+        endDate,
+        tags: [],
+        files: files.length > 0 ? files : undefined,
+        subtasks: validSubtasks.length > 0 ? validSubtasks : undefined,
+      };
+      onCreateTask(newTask);
+    }
     handleClose();
   };
 
