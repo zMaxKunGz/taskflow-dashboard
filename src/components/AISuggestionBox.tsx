@@ -41,20 +41,12 @@ const priorityStyles = {
 };
 
 export function AISuggestionBox({ onCreateFromSuggestion }: AISuggestionBoxProps) {
-  const [suggestions, setSuggestions] = useState<TaskSuggestion[]>(mockSuggestions);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    // Simulate AI refreshing suggestions
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % suggestions.length);
-      setIsRefreshing(false);
-    }, 500);
+    setTimeout(() => setIsRefreshing(false), 500);
   };
-
-  const currentSuggestion = suggestions[currentIndex];
 
   return (
     <div className="bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-xl p-5 animate-fade-in">
@@ -64,8 +56,8 @@ export function AISuggestionBox({ onCreateFromSuggestion }: AISuggestionBoxProps
             <Sparkles className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">AI Task Suggestions</h3>
-            <p className="text-xs text-muted-foreground">Based on your company's goals</p>
+            <h3 className="font-semibold text-foreground">AI Suggestions</h3>
+            <p className="text-xs text-muted-foreground">Based on your goals</p>
           </div>
         </div>
         <Button
@@ -73,65 +65,43 @@ export function AISuggestionBox({ onCreateFromSuggestion }: AISuggestionBoxProps
           size="sm"
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="text-primary hover:text-primary hover:bg-primary/10"
+          className="text-primary hover:text-primary hover:bg-primary/10 h-8 w-8 p-0"
         >
-          <RefreshCw className={cn("w-4 h-4 mr-1", isRefreshing && "animate-spin")} />
-          Refresh
+          <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
         </Button>
       </div>
 
-      <div className="bg-card rounded-lg p-4 border border-border/50 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="p-1.5 bg-primary/10 rounded-md mt-0.5">
-            <Lightbulb className="w-4 h-4 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h4 className="font-medium text-card-foreground">{currentSuggestion.title}</h4>
-              <Badge variant="secondary" className={cn("text-xs", priorityStyles[currentSuggestion.priority])}>
-                {currentSuggestion.priority}
+      <div className="space-y-2">
+        {mockSuggestions.map((suggestion, index) => (
+          <div
+            key={index}
+            className="bg-card rounded-lg p-3 border border-border/50 shadow-sm hover:border-primary/30 transition-colors group"
+          >
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Lightbulb className="w-3.5 h-3.5 text-primary shrink-0" />
+                <h4 className="font-medium text-card-foreground text-sm truncate">{suggestion.title}</h4>
+              </div>
+              <Badge variant="secondary" className={cn("text-[10px] shrink-0 px-1.5 py-0", priorityStyles[suggestion.priority])}>
+                {suggestion.priority}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-              {currentSuggestion.description}
+            <p className="text-xs text-muted-foreground line-clamp-1 mb-2 pl-5">
+              {suggestion.description}
             </p>
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex flex-wrap gap-1">
-                {currentSuggestion.tags.map((tag) => (
-                  <Badge key={tag} variant="outline" className="text-xs px-2 py-0.5">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-              <span className="text-xs text-muted-foreground">
-                ~{currentSuggestion.estimatedDays} days
-              </span>
+            <div className="flex items-center justify-between pl-5">
+              <span className="text-[10px] text-muted-foreground">~{suggestion.estimatedDays}d</span>
+              <Button
+                onClick={() => onCreateFromSuggestion(suggestion)}
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs gap-1 px-2 text-primary hover:text-primary hover:bg-primary/10"
+              >
+                <Plus className="w-3 h-3" />
+                Create
+              </Button>
             </div>
           </div>
-        </div>
-        
-        <Button
-          onClick={() => onCreateFromSuggestion(currentSuggestion)}
-          className="w-full mt-4 gap-2"
-          size="sm"
-        >
-          <Plus className="w-4 h-4" />
-          Create This Task
-        </Button>
-      </div>
-
-      <div className="flex justify-center gap-1 mt-3">
-        {suggestions.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={cn(
-              "w-2 h-2 rounded-full transition-all",
-              index === currentIndex 
-                ? "bg-primary w-4" 
-                : "bg-primary/30 hover:bg-primary/50"
-            )}
-          />
         ))}
       </div>
     </div>
