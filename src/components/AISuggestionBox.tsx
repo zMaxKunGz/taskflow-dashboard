@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { TaskSuggestion, TaskPriority } from '@/types/task';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Plus, RefreshCw, Lightbulb } from 'lucide-react';
+import { Sparkles, Plus, RefreshCw, Lightbulb, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AISuggestionBoxProps {
@@ -41,7 +41,12 @@ const priorityStyles = {
 };
 
 export function AISuggestionBox({ onCreateFromSuggestion }: AISuggestionBoxProps) {
+  const [suggestions, setSuggestions] = useState<TaskSuggestion[]>(mockSuggestions);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleDismiss = (index: number) => {
+    setSuggestions(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -72,12 +77,23 @@ export function AISuggestionBox({ onCreateFromSuggestion }: AISuggestionBoxProps
       </div>
 
       <div className="space-y-2">
-        {mockSuggestions.map((suggestion, index) => (
+        {suggestions.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-4">No suggestions available. Click refresh to get new ones.</p>
+        )}
+        {suggestions.map((suggestion, index) => (
           <div
             key={index}
-            className="bg-card rounded-lg p-3 border border-border/50 shadow-sm hover:border-primary/30 transition-colors group"
+            className="bg-card rounded-lg p-3 border border-border/50 shadow-sm hover:border-primary/30 transition-colors group relative"
           >
-            <div className="flex items-start justify-between gap-2 mb-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDismiss(index)}
+              className="absolute top-1.5 right-1.5 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            >
+              <X className="w-3 h-3" />
+            </Button>
+            <div className="flex items-start justify-between gap-2 mb-1.5 pr-5">
               <div className="flex items-center gap-1.5 min-w-0">
                 <Lightbulb className="w-3.5 h-3.5 text-primary shrink-0" />
                 <h4 className="font-medium text-card-foreground text-sm truncate">{suggestion.title}</h4>
